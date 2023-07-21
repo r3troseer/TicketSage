@@ -1,11 +1,13 @@
+from collections import deque
 from datetime import timedelta
-from django.conf import settings
 from django.db import models, transaction
+from django.utils import timezone
+from datetime import timedelta
 from decouple import config
-import requests
 import json
-import traceback
 import logging
+import requests
+import secrets
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +46,7 @@ class Movie(models.Model):
                 error_message = data["status_message"]
                 raise Exception(f"API error: {error_message}")
 
-            with transaction.atomic():
+            with transaction.atomic():  # ensures that the database operations (deleting existing movies and creating new movies) are executed within a transaction
                 # Delete existing movies from the database
                 cls.objects.all().delete()
 
@@ -61,9 +63,10 @@ class Movie(models.Model):
                     # Create new Movie instances with API data
                     movie = cls(
                         title=movie_details["original_title"],
-                        duration=timedelta(seconds=movie_details["runtime"]),
+                        duration=timedelta(minutes=movie_details["runtime"]),
                         rating=movie_details["vote_average"],
-                        poster="https://image.tmdb.org/t/p/original/" + movie_data["poster_path"],
+                        poster="https://image.tmdb.org/t/p/original"
+                        + movie_data["poster_path"],
                         tmdb_id=movie_details["id"],
                         release_date=movie_details["release_date"],
                     )
@@ -71,6 +74,13 @@ class Movie(models.Model):
 
                 # Bulk create the new movies in the database
                 cls.objects.bulk_create(movies)
+
+                # Get all cinemas
+                cinemas = Cinema.objects.all()
+
+                # Add all movies to all cinemas
+                for cinema in cinemas:
+                    cinema.movies.add(*movies)
                 logger.info("Movies updated successfully.")
         except requests.exceptions.Timeout:
             # Handle timeout errors
@@ -96,21 +106,6 @@ class Movie(models.Model):
         verbose_name_plural = "Movies"
 
 
-class Seat(models.Model):
-    row = models.IntegerField()
-    number = models.IntegerField()
-    is_booked = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"{self.row},{self.number}, {self.is_booked}"
-
-
-class Booking(models.Model):
-    movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
-    seat = models.ForeignKey(Seat, on_delete=models.CASCADE, null=True)
-
-    def __str__(self):
-        return f"{self.movie},{self.seat}"
 
 
 class Cinema(models.Model):
@@ -118,7 +113,86 @@ class Cinema(models.Model):
     rows = models.IntegerField()
     seats_per_row = models.IntegerField()
     movies = models.ManyToManyField(Movie)
-    seats = models.ManyToManyField(Seat)
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+
+        if is_new:
+            seats = [Seat.objects.create(cinema=self, row=i, number=j) for i in range(1, self.rows+1) for j in range(1, self.seats_per_row+1)]
 
     def __str__(self):
         return self.name
+
+class Seat(models.Model):
+    cinema = models.ForeignKey(Cinema, on_delete=models.CASCADE)
+    row = models.IntegerField()
+    number = models.IntegerField()
+    # is_booked = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.row},{self.number}"
+
+class Showtime(models.Model):
+    cinema = models.ForeignKey(Cinema, on_delete=models.CASCADE)
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
+    price = models.IntegerField(default=1500, null=True)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+
+    def __str__(self):
+        return f"{self.movie} at {self.cinema} - {self.start_time.strftime('%Y-%m-%d %H:%M')}"
+
+    @classmethod
+    def create_showtimes(cls, cinema):
+        """
+        Schedules showtimes for movies in the given cinema for the next 7 days.
+        """
+        # Get all available movies
+        movies = deque(cinema.movies.all())
+
+        # Start scheduling from tomorrow 8am
+        start_time = timezone.now().replace(hour=8, minute=0) + timedelta(days=1)
+
+        # Schedule for the next 7 days
+        for _ in range(7):
+            while movies:
+                movie = movies.popleft()  # Get the next movie from the queue
+
+                # Calculate end time of the movie
+                end_time = start_time + movie.duration
+
+                # If the end time is before 10pm, schedule the movie
+                if end_time.hour < 22:
+                    cls.objects.create(
+                        cinema=cinema,
+                        movie=movie,
+                        start_time=start_time,
+                        end_time=end_time,
+                    )
+
+                    # Schedule the next movie 1 hour after the end of the current movie
+                    start_time = end_time + timedelta(hours=1)
+                else:
+                    # If the movie can't be scheduled today, put it back into the queue
+                    movies.append(movie)
+                    break  # Break the loop and move to the next day
+
+            # Move to the next day 8am
+            start_time = start_time.replace(hour=8, minute=0) + timedelta(days=1)
+
+            # If all movies have been scheduled, start scheduling from the first movie again
+            if not movies:
+                movies = deque(cinema.movies.all())
+
+    def booked_seats(self):
+        return Seat.objects.filter(booking__showtime=self)
+
+
+class Booking(models.Model):
+    booking_id = models.CharField(max_length=10, default=secrets.token_hex(5), unique=True)
+    showtime = models.ForeignKey(Showtime, on_delete=models.CASCADE)
+    seat = models.ForeignKey(Seat, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.booking_id} - {self.showtime} - {self.seat}"

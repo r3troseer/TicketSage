@@ -1,10 +1,18 @@
+from rest_framework import generics, status
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Booking, Cinema, Movie, Seat
+from .models import Booking, Cinema, Movie, Seat, Showtime
 from .forms import BookingForm
+from .serializers import MovieSerializer,ShowtimeDetailSerializer
 
 
 # Create your views here.
+class MovieListView(generics.ListAPIView):
+    queryset = Movie.objects.all()
+    serializer_class = MovieSerializer
 
+class ShowtimeDetailView(generics.RetrieveAPIView):
+    queryset = Showtime.objects.all()
+    serializer_class = ShowtimeDetailSerializer
 
 def movie_list(request):
     movies = Movie.objects.all()
