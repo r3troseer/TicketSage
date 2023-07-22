@@ -70,10 +70,8 @@ class Movie(models.Model):
                         tmdb_id=movie_details["id"],
                         release_date=movie_details["release_date"],
                     )
+                    movie.save()  # Save the movie instance to the database
                     movies.append(movie)
-
-                # Bulk create the new movies in the database
-                cls.objects.bulk_create(movies)
 
                 # Get all cinemas
                 cinemas = Cinema.objects.all()
