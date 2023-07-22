@@ -1,4 +1,5 @@
 from rest_framework import generics, status
+from rest_framework.response import Response
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Booking, Cinema, Movie, Seat, Showtime
 from .forms import BookingForm
@@ -10,7 +11,7 @@ class MovieListView(generics.ListAPIView):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
 
-class ShowtimeDetailView(generics.RetrieveAPIView):
+class ShowtimeDetailView(generics.RetrieveUpdateAPIView):
     queryset = Showtime.objects.all()
     serializer_class = ShowtimeDetailSerializer
 

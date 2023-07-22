@@ -152,7 +152,7 @@ class Showtime(models.Model):
         movies = deque(cinema.movies.all())
 
         # Start scheduling from tomorrow 8am
-        start_time = timezone.now().replace(hour=8, minute=0) + timedelta(days=1)
+        start_time = timezone.now().replace(hour=8, minute=0, second=0, microsecond=0) + timedelta(days=1)
 
         # Schedule for the next 7 days
         for _ in range(7):
@@ -179,7 +179,7 @@ class Showtime(models.Model):
                     break  # Break the loop and move to the next day
 
             # Move to the next day 8am
-            start_time = start_time.replace(hour=8, minute=0) + timedelta(days=1)
+            start_time = start_time.replace(hour=8, minute=0, second=0, microsecond=0) + timedelta(days=1)
 
             # If all movies have been scheduled, start scheduling from the first movie again
             if not movies:

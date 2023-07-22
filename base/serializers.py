@@ -1,8 +1,8 @@
 from rest_framework import serializers, generics
 from django.utils import timezone
 from django.db.models import Min
-from .models import Movie, Showtime, Seat
-
+from .models import Movie, Showtime, Seat, Booking, Cinema
+import secrets
 
 class MovieSerializer(serializers.ModelSerializer):
     next_showtime = serializers.SerializerMethodField()
@@ -31,21 +31,54 @@ class SeatSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Seat
-        fields = ["row", "number", "is_booked"]
+        fields = ['id',"row", "number", "is_booked"]
 
     def get_is_booked(self, obj):
         showtime = self.context["view"].get_object()
         return showtime.booked_seats().filter(id=obj.id).exists()
 
 
+class CinemaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cinema
+        fields = ['name']
+
+class MovieTitleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Movie
+        fields = ['title']
+
 class ShowtimeDetailSerializer(serializers.ModelSerializer):
     seats = serializers.SerializerMethodField()
+    book_seat = serializers.ListField(child=serializers.IntegerField(), required=False)
+    cinema = CinemaSerializer(read_only=True)
+    movie = MovieTitleSerializer(read_only=True)
 
     class Meta:
         model = Showtime
-        fields = ["id", "cinema", "movie", "start_time", "end_time", "seats"]
+        fields = ['id', 'movie', 'cinema', 'start_time', 'end_time', 'seats', 'book_seat']
+        read_only_fields = ['start_time', 'end_time']
 
     def get_seats(self, obj):
         seats = Seat.objects.filter(cinema=obj.cinema)
-        serializer = SeatSerializer(instance=seats, many=True, context=self.context)
-        return serializer.data
+        return SeatSerializer(seats, many=True, context=self.context).data
+
+    def update(self, instance, validated_data):
+        book_seat_ids = validated_data.pop('book_seat', [])
+        booking_ids = []
+        for book_seat_id in book_seat_ids:
+            try:
+                seat = Seat.objects.get(id=book_seat_id)
+            except Seat.DoesNotExist:
+                raise serializers.ValidationError(f'The seat with ID {book_seat_id} does not exist.')
+            if Booking.objects.filter(showtime=instance, seat=seat).exists():
+                raise serializers.ValidationError(f'The seat with ID {book_seat_id} is already booked for this showtime.')
+            booking = Booking.objects.create(showtime=instance, seat=seat, booking_id=secrets.token_hex(5))
+            booking_ids.append(booking.booking_id)
+        instance.booking_ids = booking_ids
+        return instance
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['booking_ids'] = getattr(instance, 'booking_ids', [])
+        return representation
