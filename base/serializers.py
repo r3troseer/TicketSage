@@ -5,6 +5,7 @@ from .models import Movie, Showtime, Seat, Booking, Cinema
 import secrets
 
 class MovieSerializer(serializers.ModelSerializer):
+    next_showtime_id = serializers.SerializerMethodField()
     next_showtime = serializers.SerializerMethodField()
 
     class Meta:
@@ -17,13 +18,20 @@ class MovieSerializer(serializers.ModelSerializer):
             "tmdb_id",
             "release_date",
             "next_showtime",
+            "next_showtime_id"
         ]
 
     def get_next_showtime(self, obj):
         next_showtime = Showtime.objects.filter(
             movie=obj, start_time__gt=timezone.now()
-        ).aggregate(Min("start_time"))["start_time__min"]
-        return next_showtime
+        ).order_by('start_time').first()
+        return next_showtime.start_time
+    
+    def get_next_showtime_id(self, obj):
+        next_showtime = Showtime.objects.filter(
+            movie=obj, start_time__gt=timezone.now()
+        ).order_by('start_time').first()
+        return next_showtime.id 
 
 
 class SeatSerializer(serializers.ModelSerializer):
