@@ -26,9 +26,20 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    
     "base.apps.BaseConfig",
+    
     'corsheaders',
-    "rest_framework",
+
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+
+    'rest_framework',
+    'rest_framework.authtoken',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
 ]
 
 REST_FRAMEWORK = {
@@ -142,3 +153,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # TMDB
 TMDB_key = config("TMDB_KEY")
+SITE_ID =1

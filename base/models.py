@@ -1,5 +1,6 @@
 from collections import deque
 from datetime import timedelta
+from django.contrib.auth.models import User
 from django.db import models, transaction
 from django.utils import timezone
 from datetime import timedelta
@@ -16,7 +17,9 @@ class Movie(models.Model):
     title = models.CharField(max_length=200)
     duration = models.DurationField()
     rating = models.FloatField()
+    overview = models.TextField()
     poster = models.URLField()
+    backdrop_path = models.URLField()
     tmdb_id = models.IntegerField()
     release_date = models.DateField()
 
@@ -67,9 +70,14 @@ class Movie(models.Model):
                         rating=movie_details["vote_average"],
                         poster="https://image.tmdb.org/t/p/original"
                         + movie_data["poster_path"],
+                        backdrop_path="https://image.tmdb.org/t/p/original"
+                        + movie_data["backdrop_path"],
+                        overview=movie_details["overview"],
                         tmdb_id=movie_details["id"],
                         release_date=movie_details["release_date"],
                     )
+                    
+                    logger.info(f'{movie.title} - gotten')
                     movie.save()  # Save the movie instance to the database
                     movies.append(movie)
 
@@ -79,6 +87,7 @@ class Movie(models.Model):
                 # Add all movies to all cinemas
                 for cinema in cinemas:
                     cinema.movies.add(*movies)
+
                 logger.info("Movies updated successfully.")
         except requests.exceptions.Timeout:
             # Handle timeout errors
@@ -104,23 +113,26 @@ class Movie(models.Model):
         verbose_name_plural = "Movies"
 
 
-
-
 class Cinema(models.Model):
     name = models.CharField(max_length=200)
     rows = models.IntegerField()
     seats_per_row = models.IntegerField()
-    movies = models.ManyToManyField(Movie)
+    movies = models.ManyToManyField(Movie, blank=True)
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         super().save(*args, **kwargs)
 
         if is_new:
-            seats = [Seat.objects.create(cinema=self, row=i, number=j) for i in range(1, self.rows+1) for j in range(1, self.seats_per_row+1)]
+            seats = [
+                Seat.objects.create(cinema=self, row=i, number=j)
+                for i in range(1, self.rows + 1)
+                for j in range(1, self.seats_per_row + 1)
+            ]
 
     def __str__(self):
         return self.name
+
 
 class Seat(models.Model):
     cinema = models.ForeignKey(Cinema, on_delete=models.CASCADE)
@@ -130,6 +142,7 @@ class Seat(models.Model):
 
     def __str__(self):
         return f"{self.row},{self.number}"
+
 
 class Showtime(models.Model):
     cinema = models.ForeignKey(Cinema, on_delete=models.CASCADE)
@@ -150,7 +163,9 @@ class Showtime(models.Model):
         movies = deque(cinema.movies.all())
 
         # Start scheduling from tomorrow 8am
-        start_time = timezone.now().replace(hour=8, minute=0, second=0, microsecond=0) + timedelta(days=1)
+        start_time = timezone.now().replace(
+            hour=8, minute=0, second=0, microsecond=0
+        ) + timedelta(days=1)
 
         # Schedule for the next 7 days
         for _ in range(7):
@@ -177,7 +192,9 @@ class Showtime(models.Model):
                     break  # Break the loop and move to the next day
 
             # Move to the next day 8am
-            start_time = start_time.replace(hour=8, minute=0, second=0, microsecond=0) + timedelta(days=1)
+            start_time = start_time.replace(
+                hour=8, minute=0, second=0, microsecond=0
+            ) + timedelta(days=1)
 
             # If all movies have been scheduled, start scheduling from the first movie again
             if not movies:
@@ -188,7 +205,10 @@ class Showtime(models.Model):
 
 
 class Booking(models.Model):
-    booking_id = models.CharField(max_length=10, default=secrets.token_hex(5), unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    ticket_number = models.CharField(
+        max_length=10, default=secrets.token_hex(5), unique=True
+    )
     showtime = models.ForeignKey(Showtime, on_delete=models.CASCADE)
     seat = models.ForeignKey(Seat, on_delete=models.CASCADE)
 

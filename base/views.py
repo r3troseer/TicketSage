@@ -3,15 +3,25 @@ from rest_framework.response import Response
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Booking, Cinema, Movie, Seat, Showtime
 from .forms import BookingForm
-from .serializers import MovieSerializer,ShowtimeDetailSerializer
+from .serializers import MovieSerializer,ShowtimeDetailSerializer, MovieDetailSerializer
 
 
 # Create your views here.
 class MovieListView(generics.ListAPIView):
+    """
+    API view to retrieve list of all available movies.
+    """
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
 
+class MovieDetailView(generics.RetrieveAPIView):
+    queryset=Movie.objects.all()
+    serializer_class=MovieDetailSerializer
+
 class ShowtimeDetailView(generics.RetrieveUpdateAPIView):
+    """
+    API view to retrieve or book for a single showtime.
+    """
     queryset = Showtime.objects.all()
     serializer_class = ShowtimeDetailSerializer
 
