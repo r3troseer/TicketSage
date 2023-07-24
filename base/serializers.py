@@ -132,7 +132,7 @@ class ShowtimeDetailSerializer(serializers.ModelSerializer):
         Method to handle the booking of seats.
         """
         book_seat_ids = validated_data.pop("book_seat", [])
-        booking_ids = []
+        ticket_numbers = []
         for book_seat_id in book_seat_ids:
             try:
                 seat = Seat.objects.get(id=book_seat_id)
@@ -145,10 +145,10 @@ class ShowtimeDetailSerializer(serializers.ModelSerializer):
                     f"The seat with ID {book_seat_id} is already booked for this showtime."
                 )
             booking = Booking.objects.create(
-                showtime=instance, seat=seat, booking_id=secrets.token_hex(5)
+                showtime=instance, seat=seat, ticket_number=secrets.token_hex(5)
             )
-            booking_ids.append(booking.booking_id)
-        instance.booking_ids = booking_ids
+            ticket_numbers.append(booking.ticket_number)
+        instance.ticket_number = ticket_numbers
         return instance
 
     def to_representation(self, instance):
@@ -156,7 +156,7 @@ class ShowtimeDetailSerializer(serializers.ModelSerializer):
         Method to include the booking IDs in the serialized output.
         """
         representation = super().to_representation(instance)
-        representation["booking_ids"] = getattr(instance, "booking_ids", [])
+        representation["ticket_numbers"] = getattr(instance, "booking_ids", [])
         return representation
 
 
