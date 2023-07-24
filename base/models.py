@@ -76,7 +76,7 @@ class Movie(models.Model):
                         tmdb_id=movie_details["id"],
                         release_date=movie_details["release_date"],
                     )
-                    
+
                     logger.info(f'{movie.title} - gotten')
                     movie.save()  # Save the movie instance to the database
                     movies.append(movie)
@@ -205,7 +205,7 @@ class Showtime(models.Model):
 
 
 class Booking(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     ticket_number = models.CharField(
         max_length=10, default=secrets.token_hex(5), unique=True
     )
