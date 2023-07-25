@@ -5,6 +5,12 @@ from .models import Movie, Showtime, Seat, Booking, Cinema
 import secrets
 
 
+def number_to_alphabet(num):
+    if num < 1 or num > 26:
+        raise ValueError("Number should be between 1 and 26.")
+    return chr(num + 96)
+
+
 class MovieSerializer(serializers.ModelSerializer):
     """
     Serializer for the Movie model. It includes fields for the next showtime and its ID.
@@ -44,6 +50,10 @@ class ShowtimeSerializer(serializers.ModelSerializer):
 
 
 class MovieDetailSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Movie Detail. It includes fields for the available showtime and its ID.
+    """
+
     showtimes = serializers.SerializerMethodField()
 
     class Meta:
@@ -71,11 +81,12 @@ class MovieDetailSerializer(serializers.ModelSerializer):
 
 
 class SeatSerializer(serializers.ModelSerializer):
+    seat_number = serializers.SerializerMethodField()
     is_booked = serializers.SerializerMethodField()
 
     class Meta:
         model = Seat
-        fields = ["id", "row", "number", "is_booked"]
+        fields = ["id", "seat_number", "is_booked"]
 
     def get_is_booked(self, obj):
         """
@@ -83,6 +94,9 @@ class SeatSerializer(serializers.ModelSerializer):
         """
         showtime = self.context["view"].get_object()
         return showtime.booked_seats().filter(id=obj.id).exists()
+
+    def get_seat_number(self, obj):
+        return f"{obj.number} {number_to_alphabet(obj.row)}"
 
 
 class CinemaSerializer(serializers.ModelSerializer):
@@ -175,4 +189,3 @@ class ShowtimeDetailSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = User
 #         fields = ['id', 'first_name', 'last_name', ]
-
