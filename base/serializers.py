@@ -11,7 +11,7 @@ def number_to_alphabet(num):
     return chr(num + 96)
 
 
-class MovieSerializer(serializers.ModelSerializer):
+class MovieListSerializer(serializers.ModelSerializer):
     """
     Serializer for the Movie model. It includes fields for the next showtime and its ID.
     """
@@ -21,6 +21,7 @@ class MovieSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
         fields = [
+            "id",
             "title",
             "duration",
             "rating",
@@ -108,7 +109,7 @@ class CinemaSerializer(serializers.ModelSerializer):
 class MovieTitleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
-        fields = ["title"]
+        fields = ["title", "poster"]
 
 
 class ShowtimeDetailSerializer(serializers.ModelSerializer):
@@ -170,14 +171,37 @@ class ShowtimeDetailSerializer(serializers.ModelSerializer):
         Method to include the booking IDs in the serialized output.
         """
         representation = super().to_representation(instance)
-        representation["ticket_numbers"] = getattr(instance, "booking_ids", [])
+        representation["ticket_numbers"] = getattr(instance, "ticket_numbers", [])
         return representation
 
 
-# class BookingSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Booking
-#         fields = []
+class SeatBookSerializer(serializers.ModelSerializer):
+    seat_number = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Seat
+        fields = ["id", "seat_number",]
+
+    def get_seat_number(self, obj):
+        return f"{obj.number} {number_to_alphabet(obj.row)}"
+
+
+class ShowtimebookSerializer(serializers.ModelSerializer):
+    movie = MovieTitleSerializer(read_only=True)
+    cinema = CinemaSerializer(read_only=True)
+
+    class Meta:
+        model = Showtime
+        fields = ["id", "movie", "cinema", "start_time"]
+
+
+class BookingSerializer(serializers.ModelSerializer):
+    showtime = ShowtimebookSerializer(read_only=True)
+    seat=SeatBookSerializer()
+
+    class Meta:
+        model = Booking
+        fields = ["id", "showtime", "seat", "ticket_number"]
 
 
 # class UserSerializer(serializers.ModelSerializer):

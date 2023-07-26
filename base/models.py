@@ -213,4 +213,4 @@ class Booking(models.Model):
     seat = models.ForeignKey(Seat, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.booking_id} - {self.showtime} - {self.seat}"
+        return f"{self.user} with {self.ticket_number} at {self.showtime} - {self.seat}"
