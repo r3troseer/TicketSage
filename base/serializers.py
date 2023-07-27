@@ -1,14 +1,9 @@
 from rest_framework import serializers, generics
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.utils import timezone
 from .models import Movie, Showtime, Seat, Booking, Cinema
 import secrets
-
-
-def number_to_alphabet(num):
-    if num < 1 or num > 26:
-        raise ValueError("Number should be between 1 and 26.")
-    return chr(num + 96)
 
 
 class MovieListSerializer(serializers.ModelSerializer):
@@ -82,12 +77,12 @@ class MovieDetailSerializer(serializers.ModelSerializer):
 
 
 class SeatSerializer(serializers.ModelSerializer):
-    seat_number = serializers.SerializerMethodField()
+    # seat_number = serializers.SerializerMethodField()
     is_booked = serializers.SerializerMethodField()
 
     class Meta:
         model = Seat
-        fields = ["id", "seat_number", "is_booked"]
+        fields = ["id", "seat_number", "is_booked",]
 
     def get_is_booked(self, obj):
         """
@@ -95,9 +90,6 @@ class SeatSerializer(serializers.ModelSerializer):
         """
         showtime = self.context["view"].get_object()
         return showtime.booked_seats().filter(id=obj.id).exists()
-
-    def get_seat_number(self, obj):
-        return f"{obj.number} {number_to_alphabet(obj.row)}"
 
 
 class CinemaSerializer(serializers.ModelSerializer):
@@ -147,23 +139,25 @@ class ShowtimeDetailSerializer(serializers.ModelSerializer):
         Method to handle the booking of seats.
         """
         book_seat_ids = validated_data.pop("book_seat", [])
+        user=self.context.get("user")
         ticket_numbers = []
         for book_seat_id in book_seat_ids:
-            try:
-                seat = Seat.objects.get(id=book_seat_id)
-            except Seat.DoesNotExist:
-                raise serializers.ValidationError(
-                    f"The seat with ID {book_seat_id} does not exist."
+            with transaction.atomic:
+                try:
+                    seat = Seat.objects.get(id=book_seat_id)
+                except Seat.DoesNotExist:
+                    raise serializers.ValidationError(
+                        f"The seat with ID {book_seat_id} does not exist."
+                    )
+                if Booking.objects.filter(showtime=instance, seat=seat).exists():
+                    raise serializers.ValidationError(
+                        f"The seat with ID {book_seat_id} is already booked for this showtime."
+                    )
+                booking = Booking.objects.create(
+                user=user, showtime=instance, seat=seat, ticket_number=secrets.token_hex(5)
                 )
-            if Booking.objects.filter(showtime=instance, seat=seat).exists():
-                raise serializers.ValidationError(
-                    f"The seat with ID {book_seat_id} is already booked for this showtime."
-                )
-            booking = Booking.objects.create(
-                showtime=instance, seat=seat, ticket_number=secrets.token_hex(5)
-            )
-            ticket_numbers.append(booking.ticket_number)
-        instance.ticket_number = ticket_numbers
+                ticket_numbers.append(booking.ticket_number)
+        instance.ticket_numbers = ticket_numbers
         return instance
 
     def to_representation(self, instance):
@@ -176,14 +170,10 @@ class ShowtimeDetailSerializer(serializers.ModelSerializer):
 
 
 class SeatBookSerializer(serializers.ModelSerializer):
-    seat_number = serializers.SerializerMethodField()
 
     class Meta:
         model = Seat
         fields = ["id", "seat_number",]
-
-    def get_seat_number(self, obj):
-        return f"{obj.number} {number_to_alphabet(obj.row)}"
 
 
 class ShowtimebookSerializer(serializers.ModelSerializer):

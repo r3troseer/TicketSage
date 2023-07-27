@@ -12,6 +12,10 @@ import secrets
 
 logger = logging.getLogger(__name__)
 
+def number_to_alphabet(num):
+    if num < 1 or num > 26:
+        raise ValueError("Number should be between 1 and 26.")
+    return chr(num + 96)
 
 class Movie(models.Model):
     title = models.CharField(max_length=200)
@@ -139,6 +143,11 @@ class Seat(models.Model):
     row = models.IntegerField()
     number = models.IntegerField()
     # is_booked = models.BooleanField(default=False)
+
+    @property
+    def seat_number(self):
+        seat_number=f'{self.number} {number_to_alphabet(self.row)}'
+        return seat_number
 
     def __str__(self):
         return f"{self.row},{self.number}"

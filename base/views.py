@@ -38,6 +38,15 @@ class ShowtimeDetailView(generics.RetrieveUpdateAPIView):
     queryset = Showtime.objects.all()
     serializer_class = ShowtimeDetailSerializer
 
+    def get_serializer_context(self):
+        user = self.request.user
+        context = super(ShowtimeDetailView, self).get_serializer_context()
+        context.update({
+            "user": user
+            # extra data
+        })
+        return context
+
 
 class UserMovieView(generics.ListAPIView):
     """
