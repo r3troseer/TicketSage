@@ -21,10 +21,8 @@ class MovieListSerializer(serializers.ModelSerializer):
             "duration",
             "rating",
             "poster",
-            # "tmdb_id",
             "release_date",
             "next_showtime",
-            # "next_showtime_id"
         ]
 
     def get_next_showtime(self, obj):
@@ -72,12 +70,10 @@ class MovieDetailSerializer(serializers.ModelSerializer):
         showtime = Showtime.objects.filter(
             movie=obj, start_time__gt=timezone.now()
         ).order_by("start_time")
-        print(showtime)
         return ShowtimeSerializer(showtime, many=True, context=self.context).data
 
 
 class SeatSerializer(serializers.ModelSerializer):
-    # seat_number = serializers.SerializerMethodField()
     is_booked = serializers.SerializerMethodField()
 
     class Meta:
@@ -142,7 +138,7 @@ class ShowtimeDetailSerializer(serializers.ModelSerializer):
         user=self.context.get("user")
         ticket_numbers = []
         for book_seat_id in book_seat_ids:
-            with transaction.atomic:
+            with transaction.atomic():
                 try:
                     seat = Seat.objects.get(id=book_seat_id)
                 except Seat.DoesNotExist:
