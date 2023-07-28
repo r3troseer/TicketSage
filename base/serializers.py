@@ -78,7 +78,11 @@ class SeatSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Seat
-        fields = ["id", "seat_number", "is_booked",]
+        fields = [
+            "id",
+            "seat_number",
+            "is_booked",
+        ]
 
     def get_is_booked(self, obj):
         """
@@ -135,24 +139,36 @@ class ShowtimeDetailSerializer(serializers.ModelSerializer):
         Method to handle the booking of seats.
         """
         book_seat_ids = validated_data.pop("book_seat", [])
-        user=self.context.get("user")
-        ticket_numbers = []
+        user = self.context.get("user")
+        ticket_numbers = [] # Store Ticket number to be returned
+        bookings_to_create = []  # Store Booking objects to be created
+        validation_errors = []  # Store validation errors to be raised
         for book_seat_id in book_seat_ids:
-            with transaction.atomic():
-                try:
-                    seat = Seat.objects.get(id=book_seat_id)
-                except Seat.DoesNotExist:
-                    raise serializers.ValidationError(
-                        f"The seat with ID {book_seat_id} does not exist."
-                    )
+            try:
+                seat = Seat.objects.get(id=book_seat_id)
                 if Booking.objects.filter(showtime=instance, seat=seat).exists():
-                    raise serializers.ValidationError(
+                    validation_errors.append(
                         f"The seat with ID {book_seat_id} is already booked for this showtime."
                     )
-                booking = Booking.objects.create(
-                user=user, showtime=instance, seat=seat, ticket_number=secrets.token_hex(5)
+                else:
+                    bookings_to_create.append(seat)  # Add to the seat list for later booking
+            except Seat.DoesNotExist:
+                validation_errors.append(
+                    f"The seat with ID {book_seat_id} does not exist."
                 )
-                ticket_numbers.append(booking.ticket_number)
+        if validation_errors:
+            raise serializers.ValidationError(validation_errors)
+        
+        # If no validation errors, create the bookings
+        for seat in bookings_to_create:
+            booking = Booking.objects.create(
+                user=user,
+                showtime=instance,
+                seat=seat,
+                ticket_number=secrets.token_hex(5),
+            )
+            ticket_numbers.append(booking.ticket_number) # Add to the ticket list for booking(s) made
+
         instance.ticket_numbers = ticket_numbers
         return instance
 
@@ -166,10 +182,12 @@ class ShowtimeDetailSerializer(serializers.ModelSerializer):
 
 
 class SeatBookSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Seat
-        fields = ["id", "seat_number",]
+        fields = [
+            "id",
+            "seat_number",
+        ]
 
 
 class ShowtimebookSerializer(serializers.ModelSerializer):
@@ -183,7 +201,7 @@ class ShowtimebookSerializer(serializers.ModelSerializer):
 
 class BookingSerializer(serializers.ModelSerializer):
     showtime = ShowtimebookSerializer(read_only=True)
-    seat=SeatBookSerializer()
+    seat = SeatBookSerializer()
 
     class Meta:
         model = Booking
