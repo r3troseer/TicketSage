@@ -95,7 +95,7 @@ class SeatSerializer(serializers.ModelSerializer):
 class CinemaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cinema
-        fields = ["name"]
+        fields = ["name", "seats_per_row"]
 
 
 class MovieTitleSerializer(serializers.ModelSerializer):
