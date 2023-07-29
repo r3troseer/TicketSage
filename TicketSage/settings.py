@@ -51,6 +51,10 @@ REST_FRAMEWORK = {
     ],
 }
 
+REST_AUTH ={
+    'OLD_PASSWORD_FIELD_ENABLED':True
+}
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

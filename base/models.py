@@ -72,7 +72,7 @@ class Movie(models.Model):
                         title=movie_details["original_title"],
                         duration=timedelta(minutes=movie_details["runtime"]),
                         rating=movie_details["vote_average"],
-                        poster="https://image.tmdb.org/t/p/original"
+                        poster="https://image.tmdb.org/t/p/w400"
                         + movie_data["poster_path"],
                         backdrop_path="https://image.tmdb.org/t/p/original"
                         + movie_data["backdrop_path"],
