@@ -185,7 +185,7 @@ class Showtime(models.Model):
                 end_time = start_time + movie.duration
 
                 # If the end time is before 10pm, schedule the movie
-                if end_time.hour < 22:
+                if end_time.hour < 23:
                     cls.objects.create(
                         cinema=cinema,
                         movie=movie,
@@ -223,3 +223,12 @@ class Booking(models.Model):
 
     def __str__(self):
         return f"{self.user} with {self.ticket_number} at {self.showtime} - {self.seat}"
+
+class Payment(models.Model):
+    booking = models.OneToOneField(Booking, on_delete=models.SET_NULL, null=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    paid = models.BooleanField(default=False)
+    date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.booking} -- {self.paid}'

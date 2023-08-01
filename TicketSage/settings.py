@@ -26,34 +26,28 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    
     "base.apps.BaseConfig",
-    
-    'corsheaders',
-
-    'django.contrib.sites',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-
-    'rest_framework',
-    'rest_framework.authtoken',
-    'dj_rest_auth',
-    'dj_rest_auth.registration',
+    "corsheaders",
+    "django.contrib.sites",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "rest_framework",
+    "rest_framework.authtoken",
+    "dj_rest_auth",
+    "dj_rest_auth.registration",
 ]
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
-    ],
+    # 'DEFAULT_AUTHENTICATION_CLASSES': [
+    #     # 'rest_framework.authentication.TokenAuthentication',
+    # ],
 }
 
-REST_AUTH ={
-    'OLD_PASSWORD_FIELD_ENABLED':True
-}
+REST_AUTH = {"OLD_PASSWORD_FIELD_ENABLED": True}
 
 
 MIDDLEWARE = [
@@ -64,7 +58,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    'corsheaders.middleware.CorsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
@@ -150,7 +144,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
-STATIC_ROOT = config('STATIC_ROOT')
+STATIC_ROOT = config("STATIC_ROOT")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -159,4 +153,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # TMDB
 TMDB_key = config("TMDB_KEY")
-SITE_ID =1
+
+SITE_ID = 1
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

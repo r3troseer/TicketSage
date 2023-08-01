@@ -2,7 +2,7 @@ from rest_framework import serializers, generics
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.utils import timezone
-from .models import Movie, Showtime, Seat, Booking, Cinema
+from .models import Movie, Showtime, Seat, Booking, Cinema, Payment
 import secrets
 
 
@@ -168,6 +168,13 @@ class ShowtimeDetailSerializer(serializers.ModelSerializer):
                 ticket_number=secrets.token_hex(5),
             )
             ticket_numbers.append(booking.ticket_number) # Add to the ticket list for booking(s) made
+
+            # Create Payment object and associate it with the booking
+            payment = Payment.objects.create(
+                booking=booking,
+                amount=booking.showtime.price,
+                paid=False,
+            )
 
         instance.ticket_numbers = ticket_numbers
         return instance
