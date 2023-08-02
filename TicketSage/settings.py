@@ -49,6 +49,17 @@ REST_FRAMEWORK = {
 
 REST_AUTH = {"OLD_PASSWORD_FIELD_ENABLED": True}
 
+ACCOUNT_EMAIL_VERIFICATION = None
+
+# ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+
+# # ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = '/auth/login/'
+# # ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = '/auth/login/'
+
+# LOGIN_URL = 'http://localhost:5000/auth/login/'
+
+# LOGIN_REDIRECT_URL='http://localhost:5000/auth/login/'
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
