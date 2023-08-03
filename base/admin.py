@@ -1,11 +1,12 @@
 from django.contrib import admin
-from .models import Booking, Cinema, Movie, Seat, Showtime
+from .models import Booking, Cinema, Movie, Seat, Showtime, Payment
 
 admin.site.register(Booking)
 admin.site.register(Cinema)
 # admin.site.register(Movie)
 admin.site.register(Seat)
 admin.site.register(Showtime)
+admin.site.register(Payment)
 
 
 class MovieAdmin(admin.ModelAdmin):
