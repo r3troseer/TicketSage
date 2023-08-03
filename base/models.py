@@ -185,7 +185,7 @@ class Showtime(models.Model):
                 end_time = start_time + movie.duration
 
                 # If the end time is before 10pm, schedule the movie
-                if end_time.hour < 23:
+                if end_time.hour < 22:
                     cls.objects.create(
                         cinema=cinema,
                         movie=movie,
