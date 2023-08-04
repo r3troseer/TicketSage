@@ -10,7 +10,7 @@ class MovieListSerializer(serializers.ModelSerializer):
     """
     Serializer for the Movie model. It includes fields for the next showtime and its ID.
     """
-    rating=serializers.DecimalField(decimal_places=1, max_digits=2)
+    rating=serializers.DecimalField(decimal_places=1, max_digits=3)
     next_showtime = serializers.SerializerMethodField()
 
     class Meta:
@@ -47,7 +47,7 @@ class MovieDetailSerializer(serializers.ModelSerializer):
     """
     Serializer for the Movie Detail. It includes fields for the available showtime and its ID.
     """
-    rating=serializers.DecimalField(decimal_places=1, max_digits=2)
+    rating=serializers.DecimalField(decimal_places=1, max_digits=3)
     showtimes = serializers.SerializerMethodField()
 
     class Meta:
