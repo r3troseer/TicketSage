@@ -48,9 +48,22 @@ class ShowtimeDetailView(generics.RetrieveUpdateAPIView):
         return context
 
 
-class UserMovieView(generics.ListAPIView):
+class UserMovieListView(generics.ListAPIView):
     """
     API view to retrieve available movie(s) booked by user.
+    """
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = BookingSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return Booking.objects.filter(user=user)
+
+
+class UserMovieDestroyView(generics.DestroyAPIView):
+    """
+    API view to cancel movies booked by user.
     """
 
     permission_classes = [IsAuthenticated]
