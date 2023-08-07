@@ -29,12 +29,19 @@ class MovieListSerializer(serializers.ModelSerializer):
         """
         Method to get the next showtime for the movie.
         """
-        next_showtime = (
-            Showtime.objects.filter(movie=obj, start_time__gt=timezone.now())
-            .order_by("start_time")
-            .first()
-        )
-        return next_showtime.start_time
+        try:
+            next_showtime = (
+                Showtime.objects.filter(movie=obj, start_time__gt=timezone.now())
+                .order_by("start_time")
+                .first()
+            )
+            if next_showtime:
+                return next_showtime.start_time
+            else:
+                return None
+        except Exception as e:
+            print(e)
+            return None 
 
 
 class ShowtimeSerializer(serializers.ModelSerializer):

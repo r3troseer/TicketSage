@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -17,7 +18,7 @@ class MovieListView(generics.ListAPIView):
     API view to retrieve list of all available movies.
     """
 
-    queryset = Movie.objects.all()
+    queryset = Movie.objects.filter(showtime__start_time__gt=timezone.now()).distinct()
     serializer_class = MovieListSerializer
 
 
